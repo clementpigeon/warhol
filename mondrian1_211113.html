@@ -7,7 +7,7 @@
 <style type="text/css">
 #display {
     background-color: #fff;
-    margin: 100px;
+    margin: 20px;
 }
 body {
     background-color: #999;
@@ -15,28 +15,123 @@ body {
 
 </style>
 
-
+<div><span id='nbRect'>X</span> rectangles</div>
 <canvas id='display' width='500' height='400'></canvas>
-
 <script type="text/javascript" src='http://code.createjs.com/createjs-2013.09.25.min.js'></script>
 <script type="text/javascript" src='http://code.jquery.com/jquery-1.10.2.js'></script>
+<script type="text/javascript" src='http://underscorejs.org/underscore.js'></script>
 <script type="text/javascript">
 
 
-// simulating click on (200, 100)
 
 var stageWidth = 500;
 var stageHeight = 400;
 var $canvas = $('#display');
 
 var stage = new createjs.Stage('display');
+var isFirst = true;
+
+
+var colors = ['#f00', '#ff0', '#00f', '#000']; // add white after testing
+
+function Rect(left, top, right, bottom){
+
+	this.colored = false;
+	this.left = left;
+	this.top = top;
+	this.right = right;
+	this.bottom = bottom;
+
+
+	this.width = function (){
+		return this.right - this.left; 
+	};
+
+	this.height = function (){
+		return this.bottom - this.top; 
+	};
+
+	this.intersects = function(otherRect){
+		return (this.left <= otherRect.right &&
+		  otherRect.left <= this.right &&
+		  this.top <= otherRect.bottom &&
+		  otherRect.top <= this.bottom);
+	};
+	
+}
+
+
+var rectangles = []
+var first_rect = new Rect(0,0, stageWidth, stageHeight);
+rectangles.push(first_rect);
+
+function updateRectArray(click_point){
+	// vertical line
+	var newRectArray1 = [];
+
+	rectangles.forEach(function(rect){
+		if (click_point.x > rect.left && click_point.x < rect.right ){
+			var leftRect = new Rect(rect.left, rect.top, click_point.x - 5, rect.bottom);
+			var rightRect = new Rect(click_point.x + 5, rect.top, rect.right, rect.bottom);
+			newRectArray1.push(leftRect);
+			newRectArray1.push(rightRect);			
+		} 
+		else {
+			newRectArray1.push(rect);
+		}		
+	});
+
+	// horizontal line
+	var newRectArray2 = [];
+
+	newRectArray1.forEach(function(rect){
+		if (click_point.y > rect.top && click_point.y < rect.bottom ){
+			var topRect = new Rect(rect.left, rect.top, rect.right, click_point.y - 5);
+			var bottomRect = new Rect(rect.left, click_point.y + 5, rect.right, rect.bottom);
+			newRectArray2.push(topRect);
+			newRectArray2.push(bottomRect);			
+		} 
+		else {
+			newRectArray2.push(rect);
+		}	
+
+	});
+	rectangles = newRectArray2;
+	console.log(rectangles);
+}
+
 
 $canvas.on('click', function(event){
 	var click_point = new createjs.Point(event.offsetX, event.offsetY);
 	// drawPoint(click_point);
-	addLinesFromPoint(click_point);
+	updateRectArray(click_point);
+	drawLinesFromPoint(click_point);
+	
+	if (isFirst){
+		console.log('first');
+		isFirst = false;
+		return;
+	}
+	var new_colorized = selectRectToColorize()
+	console.log(new_colorized);
+	colorize(new_colorized);	
+
+
 });
 
+function selectRectToColorize(){
+	return _.sample(rectangles);	
+};
+
+
+function colorize(rect){
+	var filling = new createjs.Shape();
+	filling.graphics.beginFill(_.sample(colors));
+	filling.graphics.drawRect(0, 0, rect.right - rect.left, rect.bottom - rect.top);
+	filling.x = rect.left;
+	filling.y = rect.top;
+	stage.addChild(filling);
+};
 
 
 function drawPoint(click_point){
@@ -46,10 +141,10 @@ function drawPoint(click_point){
 	origin.x = click_point.x;
 	origin.y = click_point.y;
 	stage.addChild(origin);
-}
+};
 
 
-function addLinesFromPoint(click_point){
+function drawLinesFromPoint(click_point){
 	// vertical line
 	var h_line = new createjs.Shape();
 	h_line.graphics.beginFill("#000");
@@ -85,19 +180,14 @@ function addLinesFromPoint(click_point){
 	stage.addChild(v_line);
 }
 
-
-
 createjs.Ticker.setFPS(40);
 createjs.Ticker.addEventListener('tick', tick);
 
 
 function tick(event){
-	stage.update();	
+	stage.update();
+	$('#nbRect').text(rectangles.length);
 };
-
-
-
-
 
 
 </script>
