@@ -52,12 +52,11 @@ function Rect(left, top, right, bottom){
 	};
 
 	this.intersects = function(otherRect){
-		return (this.left <= otherRect.right &&
-		  otherRect.left <= this.right &&
-		  this.top <= otherRect.bottom &&
-		  otherRect.top <= this.bottom);
+		return (this.left < otherRect.right &&
+		  otherRect.left < this.right &&
+		  this.top < otherRect.bottom &&
+		  otherRect.top < this.bottom);
 	};
-	
 }
 
 
@@ -65,27 +64,80 @@ var rectangles = []
 var first_rect = new Rect(0,0, stageWidth, stageHeight);
 rectangles.push(first_rect);
 
-function updateRectArray(click_point){
+
+function calculateLinesEnds(click_point){
+	// vertical line, click_point.x constant
+	var y_min = 0;
+	var y_max = stageHeight;	
+	var x_min = 0;
+	var x_max = stageWidth;	
+
+	coloredRectangles = _(rectangles).select(function(rect){return rect.colored});
+	console.log(coloredRectangles);
+
+	coloredRectangles.forEach(function(rect){
+		if (click_point.x > rect.left && click_point.x < rect.right ){  // the vertical line crosses the rectangle
+			if (click_point.y < rect.top){ // click_point.y is above the rect
+				if (y_max > rect.top){
+					y_max = rect.top;
+				}
+			}
+			else if (y_min < rect.bottom){  // click_point.y is below the rect
+				y_min = rect.bottom;	
+			}
+		} 
+	});	
+
+	coloredRectangles.forEach(function(rect){
+		if (click_point.y > rect.top && click_point.y < rect.bottom ){  // the horizontal line crosses the rectangle
+			if (click_point.x < rect.left ){ // click_point.y is above the rect
+				if (x_max > rect.left){
+					x_max = rect.left;
+				}
+			}
+			else if (x_min < rect.right){  // click_point.y is below the rect
+				x_min = rect.right;	
+			}
+		} 
+	});	
+
+	var result = {
+		x_min: x_min, 
+		y_min: y_min,
+		x_max: x_max,
+		y_max: y_max
+	};
+
+	console.log(result);
+	return result;
+};
+
+function updateRectArray(click_point, linesEnds){
 	// vertical line
 	var newRectArray1 = [];
 
+	var verticalLine = new Rect(click_point.x, linesEnds.y_min, click_point.x, linesEnds.y_max);
+
 	rectangles.forEach(function(rect){
-		if (click_point.x > rect.left && click_point.x < rect.right ){
+//		if (click_point.x > rect.left && click_point.x < rect.right && click_point.y >= linesEnds.y_min &&  click_point.y <= linesEnds.y_max ){
+		if (rect.intersects(verticalLine)){
 			var leftRect = new Rect(rect.left, rect.top, click_point.x - 5, rect.bottom);
 			var rightRect = new Rect(click_point.x + 5, rect.top, rect.right, rect.bottom);
 			newRectArray1.push(leftRect);
 			newRectArray1.push(rightRect);			
-		} 
+		}
 		else {
 			newRectArray1.push(rect);
 		}		
 	});
 
 	// horizontal line
+	var horizontalLine = new Rect(linesEnds.x_min, click_point.y, linesEnds.x_max, click_point.y);
 	var newRectArray2 = [];
 
 	newRectArray1.forEach(function(rect){
-		if (click_point.y > rect.top && click_point.y < rect.bottom ){
+	//	if (click_point.y > rect.top && click_point.y < rect.bottom && click_point.x >= linesEnds.x_min &&  click_point.x <= linesEnds.x_max  ){
+		if (rect.intersects(horizontalLine)){
 			var topRect = new Rect(rect.left, rect.top, rect.right, click_point.y - 5);
 			var bottomRect = new Rect(rect.left, click_point.y + 5, rect.right, rect.bottom);
 			newRectArray2.push(topRect);
@@ -97,42 +149,50 @@ function updateRectArray(click_point){
 
 	});
 	rectangles = newRectArray2;
-	console.log(rectangles);
-}
+};
 
 
 $canvas.on('click', function(event){
 	var click_point = new createjs.Point(event.offsetX, event.offsetY);
-	// drawPoint(click_point);
-	updateRectArray(click_point);
-	drawLinesFromPoint(click_point);
+	console.log('click on ' + click_point.y + ', ' + click_point.y);
+	
+	var linesEnds = calculateLinesEnds(click_point);
+
+	updateRectArray(click_point, linesEnds);
+
+	drawLinesFromPoint(click_point, linesEnds);
 	
 	if (isFirst){
-		console.log('first');
 		isFirst = false;
 		return;
-	}
-	var new_colorized = selectRectToColorize()
-	console.log(new_colorized);
+	};
+
+	var new_colorized = selectRectToColorize() // colorize 1 rect in random color
 	colorize(new_colorized);	
+	new_colorized.colored = true;
 
+	new_colorized = selectRectToColorize(); // 'colorize' 1 rect in white
+	colorize(new_colorized, true);	
+	new_colorized.colored = true;
 
+	var coloredRectangles = _(rectangles).select(function(rect){return rect.colored});
+	console.log(coloredRectangles);
 });
 
 function selectRectToColorize(){
-	return _.sample(rectangles);	
+
+	return (_.sample(_(rectangles).reject(function(rect){return rect.colored})));	
 };
 
-
-function colorize(rect){
+function colorize(rect, isWhite){
 	var filling = new createjs.Shape();
-	filling.graphics.beginFill(_.sample(colors));
+	var color = isWhite ? '#fff' : _.sample(colors);
+	filling.graphics.beginFill(color);
 	filling.graphics.drawRect(0, 0, rect.right - rect.left, rect.bottom - rect.top);
 	filling.x = rect.left;
 	filling.y = rect.top;
 	stage.addChild(filling);
 };
-
 
 function drawPoint(click_point){
 	var origin = new createjs.Shape();
@@ -143,14 +203,13 @@ function drawPoint(click_point){
 	stage.addChild(origin);
 };
 
-
-function drawLinesFromPoint(click_point){
+function drawLinesFromPoint(click_point, linesEnds){
 	// vertical line
 	var h_line = new createjs.Shape();
 	h_line.graphics.beginFill("#000");
 
-	var h_line_min = 0;
-	var h_line_max = 500;
+	var h_line_min = linesEnds.x_min;
+	var h_line_max = linesEnds.x_max;
 
 	h_line.graphics.drawRect(0, -5, h_line_max -  h_line_min, 10);
 	h_line.x = click_point.x;
@@ -162,8 +221,8 @@ function drawLinesFromPoint(click_point){
 	var v_line = new createjs.Shape();
 	v_line.graphics.beginFill("#000");
 
-	var v_line_min = 0;
-	var v_line_max = 400;
+	var v_line_min = linesEnds.y_min;
+	var v_line_max = linesEnds.y_max;
 
 	v_line.graphics.drawRect(- 5, 0, 10, v_line_max - v_line_min);
 	v_line.x = click_point.x; 
