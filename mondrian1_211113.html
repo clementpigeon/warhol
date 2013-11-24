@@ -10,13 +10,13 @@
     margin: 20px;
 }
 body {
-    background-color: #999;
+    background-color: #c8c8d0;
 }
 
 </style>
 
-<div><span id='nbRect'>X</span> rectangles</div>
-<canvas id='display' width='500' height='400'></canvas>
+<div style='display:none'><span id='nbRect'>X</span> rectangles</div>
+<canvas id='display' width='600' height='800'></canvas>
 <script type="text/javascript" src='http://code.createjs.com/createjs-2013.09.25.min.js'></script>
 <script type="text/javascript" src='http://code.jquery.com/jquery-1.10.2.js'></script>
 <script type="text/javascript" src='http://underscorejs.org/underscore.js'></script>
@@ -24,24 +24,21 @@ body {
 
 
 
-var stageWidth = 500;
-var stageHeight = 400;
+var stageWidth = 600;
+var stageHeight = 800;
 var $canvas = $('#display');
 
 var stage = new createjs.Stage('display');
 var isFirst = true;
 
 
-var colors = ['#f00', '#ff0', '#00f', '#000']; // add white after testing
+var colors = ['#f00', '#ff0', '#00f', '#000']; 
 
 function Rect(left, top, right, bottom){
-
-	this.colored = false;
 	this.left = left;
 	this.top = top;
 	this.right = right;
 	this.bottom = bottom;
-
 
 	this.width = function (){
 		return this.right - this.left; 
@@ -59,7 +56,6 @@ function Rect(left, top, right, bottom){
 	};
 }
 
-
 var rectangles = []
 var first_rect = new Rect(0,0, stageWidth, stageHeight);
 rectangles.push(first_rect);
@@ -72,8 +68,8 @@ function calculateLinesEnds(click_point){
 	var x_min = 0;
 	var x_max = stageWidth;	
 
-	coloredRectangles = _(rectangles).select(function(rect){return rect.colored});
-	console.log(coloredRectangles);
+	coloredRectangles = _(rectangles).select(function(rect){return rect.color});
+	console.table(coloredRectangles);
 
 	coloredRectangles.forEach(function(rect){
 		if (click_point.x > rect.left && click_point.x < rect.right ){  // the vertical line crosses the rectangle
@@ -108,6 +104,7 @@ function calculateLinesEnds(click_point){
 		y_max: y_max
 	};
 
+	console.log('lines ends');
 	console.log(result);
 	return result;
 };
@@ -119,7 +116,6 @@ function updateRectArray(click_point, linesEnds){
 	var verticalLine = new Rect(click_point.x, linesEnds.y_min, click_point.x, linesEnds.y_max);
 
 	rectangles.forEach(function(rect){
-//		if (click_point.x > rect.left && click_point.x < rect.right && click_point.y >= linesEnds.y_min &&  click_point.y <= linesEnds.y_max ){
 		if (rect.intersects(verticalLine)){
 			var leftRect = new Rect(rect.left, rect.top, click_point.x - 5, rect.bottom);
 			var rightRect = new Rect(click_point.x + 5, rect.top, rect.right, rect.bottom);
@@ -136,7 +132,6 @@ function updateRectArray(click_point, linesEnds){
 	var newRectArray2 = [];
 
 	newRectArray1.forEach(function(rect){
-	//	if (click_point.y > rect.top && click_point.y < rect.bottom && click_point.x >= linesEnds.x_min &&  click_point.x <= linesEnds.x_max  ){
 		if (rect.intersects(horizontalLine)){
 			var topRect = new Rect(rect.left, rect.top, rect.right, click_point.y - 5);
 			var bottomRect = new Rect(rect.left, click_point.y + 5, rect.right, rect.bottom);
@@ -146,13 +141,13 @@ function updateRectArray(click_point, linesEnds){
 		else {
 			newRectArray2.push(rect);
 		}	
-
 	});
 	rectangles = newRectArray2;
 };
 
 
-$canvas.on('click', function(event){
+
+function onSingleClick(event) {
 	var click_point = new createjs.Point(event.offsetX, event.offsetY);
 	console.log('click on ' + click_point.y + ', ' + click_point.y);
 	
@@ -167,37 +162,76 @@ $canvas.on('click', function(event){
 		return;
 	};
 
-	var new_colorized = selectRectToColorize() // colorize 1 rect in random color
-	colorize(new_colorized);	
-	new_colorized.colored = true;
+	var new_colorized = selectRectToColorize(); 
+	var new_color = selectColor(); // returns random color
+		
+	window.setTimeout(function(){
+		colorize(new_colorized, new_color);
+	}, 2000);
 
 	new_colorized = selectRectToColorize(); // 'colorize' 1 rect in white
-	colorize(new_colorized, true);	
-	new_colorized.colored = true;
+	colorize(new_colorized, '#fff');	
+	console.table(rectangles);
+}
 
-	var coloredRectangles = _(rectangles).select(function(rect){return rect.colored});
-	console.log(coloredRectangles);
+function onDoubleClick(event) {
+	var click_point = new createjs.Point(event.offsetX, event.offsetY);
+	console.log('dblclick on ' + click_point.y + ', ' + click_point.y);
+	
+	var rect = whichRect(click_point);
+	console.log(rect.color);
+	var new_color = selectColor(rect.color);
+	colorize(rect, new_color);
+}
+
+$canvas.on('click', function(e) {
+    var that = this;
+    setTimeout(function() {
+        var dblclick = parseInt($(that).data('double'), 10);
+        if (dblclick > 0) {
+            $(that).data('double', dblclick-1);
+        } else {
+            onSingleClick.call(that, e);
+        }
+    }, 300);
+}).on('dblclick', function(e) {
+    $(this).data('double', 2);
+	onDoubleClick.call(this, e);
 });
 
-function selectRectToColorize(){
 
-	return (_.sample(_(rectangles).reject(function(rect){return rect.colored})));	
+function selectRectToColorize(){
+	return (_.sample(_(rectangles).reject(function(rect){return rect.color})));	
 };
 
-function colorize(rect, isWhite){
+function selectColor(current_color){
+	console.log('selectColor - current:' + current_color);
+
+	if (current_color){
+		var current_index = colors.indexOf(current_color);
+		current_index++;
+		if (current_index >= colors.length) {current_index = 0}
+		return colors[current_index];
+	}
+	else {
+		return _.sample(colors);
+	}
+}
+
+function colorize(rect, color){
 	var filling = new createjs.Shape();
-	var color = isWhite ? '#fff' : _.sample(colors);
 	filling.graphics.beginFill(color);
 	filling.graphics.drawRect(0, 0, rect.right - rect.left, rect.bottom - rect.top);
 	filling.x = rect.left;
 	filling.y = rect.top;
+	rect.color = color;
 	stage.addChild(filling);
 };
+
 
 function drawPoint(click_point){
 	var origin = new createjs.Shape();
 	origin.graphics.beginFill("#f00").drawRect(-3, -3, 6, 6);
-	// drawRect draws from the graphics referential
 	origin.x = click_point.x;
 	origin.y = click_point.y;
 	stage.addChild(origin);
@@ -238,6 +272,18 @@ function drawLinesFromPoint(click_point, linesEnds){
 	stage.addChild(h_line);
 	stage.addChild(v_line);
 }
+
+function whichRect(point){
+	var result;
+	rectangles.forEach(function(rect){
+		if (point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom ){  
+			result = rect;
+		} 
+	});	
+	return result;
+}
+
+
 
 createjs.Ticker.setFPS(40);
 createjs.Ticker.addEventListener('tick', tick);
