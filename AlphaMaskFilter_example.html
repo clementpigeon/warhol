@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>AlphaMaskFilter example</title>
+</head>
+<body>
+
+<style type="text/css">
+#display {
+    margin: 20px;
+}
+body {
+    background-color: white;
+}
+
+</style>
+<p>http://www.createjs.com/Docs/EaselJS/classes/AlphaMaskFilter.html</p>
+<canvas id='display' width='800' height='500'></canvas>
+<script type="text/javascript" src='js/createjs-2013.09.25.min.js'></script>
+<script type="text/javascript" src='js/jquery.js'></script>
+<script type="text/javascript">
+   
+$(function() {
+	var stage = new createjs.Stage($("#display").get(0));
+	
+	var filterbox = new createjs.Shape();
+	 filterbox.graphics.beginLinearGradientFill(["#000000", "rgba(0, 0, 0, 0)"], [0, 1], 0, 0, 499, 420)
+	 filterbox.graphics.drawRect(0, 0, 499, 420);
+	 filterbox.cache(0, 0, 499, 420);
+
+	var img = new Image();
+	img.src = "originals/radiohead.jpg";
+
+	$(img).load(function(){
+		var bmp = new createjs.Bitmap(img);
+	 	bmp.filters = [
+	    	new createjs.AlphaMaskFilter(filterbox.cacheCanvas)
+	 	];
+		bmp.cache(0, 0, 499, 420);
+
+		stage.addChild(bmp);
+		stage.update();  
+	});	
+});
+
+</script>
+
+</body>
+
+</html>

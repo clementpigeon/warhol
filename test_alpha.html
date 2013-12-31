@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Red disaster</title>
+</head>
+<body>
+
+
+
+<style type="text/css">
+#display {
+
+    margin: 20px;
+}
+body {
+    background-color: white;
+}
+
+</style>
+<input type='text' id='img_url' value='img/pape.jpg'>
+<button id='load_img'>load image</button><br />
+<canvas id='display' width='800' height='500'></canvas>
+<script type="text/javascript" src='js/createjs-2013.09.25.min.js'></script>
+<script type="text/javascript" src='js/jquery.js'></script>
+<script type="text/javascript" src='js/ThresholdFilter.js'></script>
+<script type="text/javascript" src='js/underscore.js'></script>
+<script type="text/javascript">
+
+   
+$(function() {
+	var stage = new createjs.Stage($("#display").get(0));
+	
+	var filterImg = new Image();
+	filterImg.src = "img/pape.jpg";
+
+	$(filterImg).load(function(){
+		var filterBmp = new createjs.Bitmap(filterImg);
+
+	 	var sRedToAlphaMatrixFilter = new createjs.ColorMatrixFilter([
+	 	        0, 0, 0, 0, 0,  // red
+       			0, 0, 0, 0, 0,  // green
+        		0, 0, 0, 0, 0,	// blue
+        		1, 0, 0, 0, 0   // alpha
+	 	  ]);
+
+	 	var toAlphaMatrixFilter = new createjs.ColorMatrixFilter([
+	 	        0, 0, 0, 0, 0,  // red
+       			0, 0, 0, 0, 0,  // green
+        		0, 0, 0, 0, 0,	// blue
+        		0.3, 0.59, 0.11, 0, 0   // alpha
+	 	  ]);
+
+	 	filterBmp.filters = [
+	 	    toAlphaMatrixFilter
+	 	];
+
+	 	filterBmp.cache(0, 0, 312, 156);
+
+
+		var mainImg = new Image();
+		mainImg.src = "originals/radiohead_312x156.jpg";	 	
+
+		$(mainImg).load(function(){
+			var mainBmp = new createjs.Bitmap(mainImg);
+		 	mainBmp.filters = [
+		    	new createjs.AlphaMaskFilter(filterBmp.cacheCanvas)
+		 	];
+		 	mainBmp.cache(0, 0, 312, 156);
+		 	stage.addChild(mainBmp);
+		 	// stage.addChild(filterBmp);
+	 		stage.update();  
+	 	});
+	});	
+});
+
+
+
+
+
+</script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Red disaster</title>
+</head>
+<body>
+
+
+
+<style type="text/css">
+#display {
+    margin: 20px;
+}
+body {
+    background-color: white;
+}
+
+</style>
+<input type='text' id='img_url' value='img/pape.jpg'>
+<button id='load_img'>load image</button><br />
+<canvas id='display' width='800' height='500'></canvas>
+<script type="text/javascript" src='js/createjs-2013.09.25.min.js'></script>
+<script type="text/javascript" src='js/jquery.js'></script>
+<script type="text/javascript" src='js/ThresholdFilter.js'></script>
+<script type="text/javascript" src='js/underscore.js'></script>
+<script type="text/javascript">
+
+// http://api.fidji.lefigaro.fr/media/ext/243x158_crop/images.lachainemeteo.com/image/figaro-nautisme/publications/figaro/131226_102029_000-dv1599667-493x328.jpg
+var img;
+   
+$(function() {
+	var stage = new createjs.Stage($("#display").get(0));
+	
+	var box = new createjs.Shape();
+	 box.graphics.beginLinearGradientFill(["#000000", "rgba(0, 0, 0, 0)"], [0, 1], 0, 0, 100, 100)
+	 box.graphics.drawRect(0, 0, 100, 100);
+	 box.cache(0, 0, 100, 100);
+
+	 var bmp = new createjs.Bitmap("originals/Radiohead.jpg");
+	 bmp.filters = [
+	     new createjs.AlphaMaskFilter(box.cacheCanvas)
+	 ];
+	 bmp.cache(0, 0, 100, 100);
+
+
+});
+
+
+
+
+
+</script>
+
+
+</body>
+
+</html>
