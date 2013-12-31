@@ -15,10 +15,17 @@ body {
 }
 
 </style>
-<input type='text' id='img_url' value='img/pape.jpg'>
+Choose an image:
+<button id="pape">Pape</button>
+<button id="wtc">9/11</button>
+<button id="sarkozy">Sarkozy</button>
+<button id="hollande">Hollande</button>
+- Or upload your own:
+<input type='text' id='img_url' value=''><button id="upload">Upload</button><br />
+Image width on the canvas:
 <input type='text' id='target_width' value='200'>
-<button id='load_img'>Refresh</button><br />
-<canvas id='display' width='800' height='500'></canvas>
+<button id='load_img'>Redraw</button><br />
+<canvas id='display' width='900' height='500'></canvas>
 <script type="text/javascript" src='js/createjs-2013.09.25.min.js'></script>
 <script type="text/javascript" src='js/jquery.js'></script>
 <script type="text/javascript" src='js/ThresholdFilter.js'></script>
@@ -29,14 +36,25 @@ $(function() {
 
 	setup();
 	$('#load_img').on('click', function(){
-		stage.clear();
-		stage.removeAllChildren();
 		prepareDraw(stage, $('#img_url').val());	
-	})
+	});
+
+	$('#pape').on('click', function(e){
+		prepareDraw(stage, 'img/pape.jpg');
+	});
+	$('#wtc').on('click', function(e){
+		prepareDraw(stage, 'img/wtc.gif');
+	});
+	$('#sarkozy').on('click', function(e){
+		prepareDraw(stage, 'img/france_forte.jpg');
+	});
+	$('#hollande').on('click', function(e){
+		prepareDraw(stage, 'img/hollande.jpg');
+	});
 });
 
 var stage;
-var mainCanvasWidth = 800;
+var mainCanvasWidth = 900;
 var mainCanvasHeight = 500;
 var imageDisplay, displayCanvas, displayContext, displayImage, displayImageData, originalImage;
 var fileReader	= new FileReader();
@@ -46,6 +64,8 @@ function setup(){
 }
 
 function prepareDraw (stage, originalImageSrc) {
+	stage.clear();
+	stage.removeAllChildren();
 	displayCanvas	= document.createElement('canvas');
 	displayImage = new Image();
 	displayImage.crossOrigin = "Anonymous"; 
@@ -101,19 +121,19 @@ function draw (stage, data) {
 	displayContext = displayCanvas.getContext('2d');
 	displayContext.putImageData(data.image.data, 0, 0);
 
-	var verticalOffset = Math.round( Math.random() * 12) + 6;
+	var verticalOffset = Math.round( Math.random() * 12) + 14;
 
 	var width = parseInt($('#target_width').val());
+	var horizontalRepeat = (mainCanvasWidth - 350) / width;
 
-	while (verticalOffset < mainCanvasHeight) {
-		var horizontalOffset = Math.round( Math.random() * 14) + 6;
-		console.log(verticalOffset, ' ', mainCanvasWidth);
-		while (horizontalOffset + width < mainCanvasWidth - 200) {
-
+	while (verticalOffset < mainCanvasHeight - (width * 0.5)) {
+		var horizontalOffset = Math.round( Math.random() * 20) + 8;
+		for (var i = 0; i < horizontalRepeat; i++){
 			height = drawBitmap(stage, displayCanvas, horizontalOffset, verticalOffset, width);
-			horizontalOffset += width + Math.round( Math.random() * 10) -8;
+			horizontalOffset += width + Math.round( Math.random() * 10) -9;
+			console.log(horizontalOffset, ' ', width);
 		}
-		verticalOffset += height + Math.round( Math.random() * 10) -9;
+		verticalOffset += height + Math.round( Math.random() * 7) -6;
 
 	}
 	console.log('end', verticalOffset, ' ', width)
@@ -139,8 +159,8 @@ function drawBitmap(stage, img, x, y, width) {
 	bitmap.filters = [
 	    new createjs.BlurFilter(1, 2, 1)
 	];
-
-	bitmap.cache(0,0, 500, 500);
+	console.log(width);
+	bitmap.cache(0, 0, width / ratio, bitmapHeight / ratio);
 
 	stage.update();
 	return bitmapHeight;
